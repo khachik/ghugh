@@ -4,21 +4,22 @@ from ghugh import nn
 from data import read
 
 def testXOR():
-    net = nn.Net(2, 1, bias=True)
+    net = nn.Net(2, 3, 1, bias=True)
 
     data = (
+            ((1, 1), (0,)),
             ((1, 0), (1,)),
             ((0, 1), (1,)),
-            ((0, 0), (0,)),
-            ((1, 1), (0,))
+            ((0, 0), (0,))
            )
 
-    for i in range(20):
+    for i in range(50000):
         for input, v in data:
-            print(v, net.feed(input))
+            print(input, list(net.feed(input)))
             net.learn(input, v, N=0.1)
-            print(v, net.feed(input))
         print("Iteration #%d passed" % i)
+    for input, _ in data:
+        print(input, list(net.feed(input)))
 
     sys.exit(0)
 
@@ -63,7 +64,7 @@ def testDATA():
     for v, input in d:
         value = [0] * 10
         value[int(v)] = 1
-        print(v, list(net.feed(input)))
+        print(v, [round(o) for o in net.feed(input)])
 
     ONE="""*********
 **** ****
@@ -87,9 +88,10 @@ def testDATA():
     one = read.readd(ONE) 
     two = read.readd(TWO)
 
-    print(list(net.feed(one)))
-    print(list(net.feed(two)))
+    print("1", [round(o) for o in net.feed(one)])
+    print("2", [round(o) for o in net.feed(two)])
 
 if __name__ == "__main__":
     #testSymmetry()
-    testDATA()
+    #testDATA()
+    testXOR()

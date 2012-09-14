@@ -1,4 +1,4 @@
-import math, random, collections, pprint
+import math, random, collections, numbers
 from . import util
 
 def sigmoid(x):
@@ -25,15 +25,38 @@ class Layer(collections.Sequence):
         return self._outputs[index]
 
 class OLayer(Layer):
-    def __init__(self, count, ocount, bias=False):
+    def __init__(self, count, ocount, iweights, bias=False):
         self._bias = bias
         if bias: count += 1
         super().__init__(count)
-        self._weights = [[0.0] * count
-                            for _ in range(ocount)]
+        if iweights is None:
+            self._weights = [[random.uniform(-1.0, 1.0)] * count
+                                for _ in range(ocount)]
+        elif isinstance(iweights, numbers.Number):
+            self._weights = [[iweights] * count
+                                for _ in range(ocount)]
+        elif isinstance(iweights, collections.Sequence):
+            if len(iweights != 2):
+                raise ValueError("Two-element sequence is needed for"
+                                 "initial weights, got %r" % iweights)
+            self._weights = [[random.uniform(iweights[0], iweights[1])] * \
+                                   count
+                             for _ in range(ocount)]
+        elif isinstance(iweights, collections.Iterable):
+            iweights = iter(iweights)
+            self._weights = [[next(iweights) for _ in range(count)]
+                             for _ in range(ocount)]
+        elif isinstance(iweights, collections.Callable):
+            self._weights = [[iweights() for _ in range(count)]
+                             for _ in range(ocount)]
+        self._weightsAt = utiltransposed(self._weights)
 
-    def weights(self, index):
-        return iter(self._weights[index])
+    def weightsTo(self, index):
+        return self._weights[index]
+    
+    def weightsAt(self, index):
+        
+
 
     def fix(self, odeltas, N=0.1):
         if self._bias:
