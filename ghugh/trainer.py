@@ -1,8 +1,7 @@
-import nn2
 
 class Algo(object):
     def train(dataset):
-        raise NotImplemented
+        raise NotImplementedError
 
 def supervised(net, algo, dataset, epoches, E=0.001):
     for i in range(epoches):

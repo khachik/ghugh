@@ -51,6 +51,9 @@ class _OLayer(_Layer):
                              for _ in range(ocount)]
         self._weightsAt = util.transposed(self._weights)
 
+    def bias(self):
+        return self._bias
+
     def weightsTo(self, index):
         return self._weights[index]
     
@@ -102,6 +105,9 @@ class _ILayer(_Layer):
         self._function = function
         self._dfunction = dfunction
 
+    def dfunction(self):
+        return self._dfunction
+
     def activate(self, inputs):
         return self._activate(inputs, len(self), 0)
 
@@ -125,11 +131,6 @@ class HiddenLayer(_OLayer, _ILayer):
         self._dfunction = dfunction
         if bias is not None: self._outputs[0] = bias
 
-    def fix(self, odeltas, N=0.1):
-        deltas = OLayer.fix(self, odeltas, N)
-        deltas = iter(deltas)
-        return map(lambda x: next(deltas)*self._dfunction(x), self)
-
     def activate(self, inputs):
         count = len(self)
         shift = 0
@@ -145,11 +146,6 @@ class HiddenLayer(_OLayer, _ILayer):
 class OutputLayer(_ILayer):
     def __init__(self, count, function=sigmoid, dfunction=dsigmoid):
         super().__init__(count, function, dfunction)
-
-    def fix(self, expected):
-        e = iter(expected)
-        ret = [self._dfunction(o)*(next(e) - o) for o in self]
-        return ret
 
     def __repr__(self):
         return "output[%d] x->%s" % (len(self), self._function.__name__)
