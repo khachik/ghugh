@@ -14,6 +14,7 @@ class _Cursor(collections.MutableSequence):
     def __init__(self, target, index):
         self.count = len(target)
         self.index = index
+        self.target = target
 
     def __len__(self):
         return self.count
@@ -22,17 +23,24 @@ class _Cursor(collections.MutableSequence):
         return self.target[i][self.index]
 
     def __setitem__(self, i, value):
-        target[i][self.index] = value
+        self.target[i][self.index] = value
 
     def __delitem__(self, i):
-        del target[i][self.index]
+        raise NotImplementedError
+
+    def insert(self, i, value):
+        raise NotImplementedError
 
 class _Transposed(collections.Sequence):
     def __init__(self, target):
-        self.columns = tuple(Cursor(target, i) for i in range(len(target)))
+        self.columns = tuple(_Cursor(target, i)
+                             for i in range(len(target[0])))
 
     def __len__(self):
         return len(self.columns)
 
     def __getitem__(self, i):
         return self.columns[i]
+
+def transposed(matrix):
+    return _Transposed(matrix)

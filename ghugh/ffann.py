@@ -13,7 +13,7 @@ def dsigmoid(y):
     assert ret != 0.0, "Invalid sigmoid value %f->%f" % (y, ret)
     return ret
 
-class Layer(collections.Sequence):
+class _Layer(collections.Sequence):
     def __init__(self, count):
         self._count = count
         self._outputs = [0.0] * count
@@ -24,7 +24,7 @@ class Layer(collections.Sequence):
     def __getitem__(self, index):
         return self._outputs[index]
 
-class OLayer(Layer):
+class _OLayer(_Layer):
     def __init__(self, count, ocount, iweights, bias=False):
         self._bias = bias
         if bias: count += 1
@@ -36,7 +36,7 @@ class OLayer(Layer):
             self._weights = [[iweights] * count
                                 for _ in range(ocount)]
         elif isinstance(iweights, collections.Sequence):
-            if len(iweights != 2):
+            if len(iweights) != 2:
                 raise ValueError("Two-element sequence is needed for"
                                  "initial weights, got %r" % iweights)
             self._weights = [[random.uniform(iweights[0], iweights[1])] * \
@@ -49,14 +49,13 @@ class OLayer(Layer):
         elif isinstance(iweights, collections.Callable):
             self._weights = [[iweights() for _ in range(count)]
                              for _ in range(ocount)]
-        self._weightsAt = utiltransposed(self._weights)
+        self._weightsAt = util.transposed(self._weights)
 
     def weightsTo(self, index):
         return self._weights[index]
     
     def weightsAt(self, index):
-        
-
+        return self._weightsAt[index]
 
     def fix(self, odeltas, N=0.1):
         if self._bias:
@@ -77,10 +76,13 @@ class OLayer(Layer):
         return deltas
 
 
-class InputLayer(OLayer):
-    def __init__(self, count, ocount, function=None, bias=False):
-        super().__init__(count, ocount, bias=bias)
-        if bias: self._outputs[0] = 1.0
+class InputLayer(_OLayer):
+    def __init__(self,
+                 count, ocount,
+                 iweights=None,
+                 function=None, bias=None):
+        super().__init__(count, ocount, iweights, bias=bias is not None)
+        if bias is not None: self._outputs[0] = bias
         self._function = function
     
     def activate(self, inputs_):
@@ -94,31 +96,34 @@ class InputLayer(OLayer):
         return "input[%d, bias=%r]" % (len(self), self._bias)
 
 
-class ILayer(Layer):
+class _ILayer(_Layer):
     def __init__(self, count, function=sigmoid, dfunction=dsigmoid):
         super().__init__(count)
         self._function = function
         self._dfunction = dfunction
 
     def activate(self, inputs):
-        return self._activate(inputs, 0, len(self))
+        return self._activate(inputs, len(self), 0)
 
-    def _activate(self, inputs, start, end):
-        for o in range(start, end):
+    def _activate(self, inputs, count, shift):
+        for o in range(0, count):
             s = sum(i*w
                                                   for i,w in
                                                   zip(inputs,
-                                                      inputs.weights(o)))
-            self._outputs[o] = self._function(s)
+                                                      inputs.weightsTo(o)))
+            self._outputs[o + shift] = self._function(s)
         return self
 
 
-class HiddenLayer(OLayer, ILayer):
+class HiddenLayer(_OLayer, _ILayer):
     def __init__(self, count, ocount,
-                       function=sigmoid, dfunction=dsigmoid, bias=False):
-        OLayer.__init__(self, count, ocount, bias=bias)
-        ILayer.__init__(self, count, function, dfunction)
-        if bias: self._outputs[0] = 0.9
+                       iweights=None,
+                       function=sigmoid, dfunction=dsigmoid, bias=None):
+        super().__init__(count, ocount, iweights,
+                         bias=bias is not None)
+        self._function = function
+        self._dfunction = dfunction
+        if bias is not None: self._outputs[0] = bias
 
     def fix(self, odeltas, N=0.1):
         deltas = OLayer.fix(self, odeltas, N)
@@ -126,13 +131,18 @@ class HiddenLayer(OLayer, ILayer):
         return map(lambda x: next(deltas)*self._dfunction(x), self)
 
     def activate(self, inputs):
-        return self._activate(inputs, self._bias and 1 or 0, len(self))
+        count = len(self)
+        shift = 0
+        if self._bias:
+            count -= 1
+            shift = 1
+        return self._activate(inputs, count, shift)
 
     def __repr__(self):
         return "hidden[%d, bias=%r]" % (len(self), self._bias)
 
 
-class OutputLayer(ILayer):
+class OutputLayer(_ILayer):
     def __init__(self, count, function=sigmoid, dfunction=dsigmoid):
         super().__init__(count, function, dfunction)
 
@@ -144,56 +154,17 @@ class OutputLayer(ILayer):
     def __repr__(self):
         return "output[%d] x->%s" % (len(self), self._function.__name__)
         
-class Net:
-    def __init__(self, *layers, bias=False):
+class Net(object):
+    def __init__(self, *layers):
+        super().__init__()
         if not layers or len(layers) < 2:
             raise ValueError("At least two layers needed, got %d" % 
                              len(layers))
-        self._layers = []
-        self._layers.append(InputLayer(layers[0], layers[1], bias=bias))
-        for i in range(1, len(layers)-1):
-            self._layers.append(HiddenLayer(layers[i], layers[i+1], bias=bias))
-        o = OutputLayer(layers[-1])
-        self._layers.append(o)
+        self._layers = tuple(layers)
         self._feed = util.compose(*tuple(l.activate for l in self._layers))
-        def fc(layer):
-            def f(x, N):
-                return layer.fix(x, N), N
-            return f
-        self._bp = util.compose(
-                *tuple(fc(self._layers[i])
-                       for i in range(len(self._layers)-2, -1, -1)),
-                           unpack=True)
 
     def feed(self, data):
         return self._feed(data)
 
-    def learn(self, input, output, N=0.1):
-        self.feed(input)
-        self._bp(self._layers[-1].fix(output), N)
-
     def __repr__(self):
         return " ".join(str(l) for l in self._layers)
-
-    def diff(self, net2):
-        # assuming the structures are identical
-        d = {}
-        for li, l1 in enumerate(self._layers[:-1]):
-            l2 = net2._layers[li]
-            ld = {}
-            for wsi, ws1 in enumerate(l1._weights):
-                wd = {}
-                ws2 = l2._weights[wsi]
-                for wi, w1 in enumerate(ws1):
-                    w2 = ws2[wi]
-                    if w1 != w2:
-                        wd[wi] = (w1, w2)
-                if wd:
-                    ld[wsi] = wd
-
-            if ld:
-                d[li] = ld
-        return d
-
-
-
