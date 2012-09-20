@@ -58,15 +58,14 @@ class Weighted(object):
 
     def update(self, odeltas, LR, M):
         dws = self._batch and self.doWeights_batch or self.doWeights
-        self._update(odeltas, self.doDeltas, dws, LR, M)
+        oldWDeltas = self._batch and self._wDeltas or self._oldWDeltas
+        self._update(odeltas, oldWDeltas, self.doDeltas, dws, LR, M)
 
-    def _update(self, odeltas, doDeltas, doWeights, LR, M):
+    def _update(self, odeltas, oldWDeltas, doDeltas, doWeights, LR, M):
         layer = self._layer
-        oldWDeltas = self._oldWDeltas
-        for i,o in enumerate(layer):
+        for i,(o, owds) in enumerate(zip(layer, oldWDeltas)):
             weights = layer.weightsAt(i)
             delta = 0.0
-            owds = oldWDeltas[i]
             for oi, (od, w) in enumerate(zip(odeltas, weights)):
                 delta += od*w
                 doWeights(oi, o, od, weights, owds, LR, M)
@@ -79,7 +78,7 @@ class Weighted(object):
             for j, (dw, odw) in enumerate(zip(dws, odws)):
                 dw = LR*dw + M*odw
                 ws[j] += dw
-                odws[j] = dw # FIXME: really dw? Including M*odw?
+                odws[j] = dw
                 dws[j] = 0.0
         
 

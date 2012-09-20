@@ -46,6 +46,14 @@ class TestCursor(unittest.TestCase):
         self.assertEqual(4, c[0])
         self.assertEqual(8, c[1])
 
+    def testSetItem(self):
+        c = _Cursor(self.data, 0)
+        self.assertRaises(IndexError, c.__setitem__, 2, 11)
+        self.assertEqual(5, c[1])
+        c[1] = 11
+        self.assertEqual(11, c[1])
+        self.assertEqual(11, self.data[1][0])
+
 
 class TestTransposed(unittest.TestCase):
     def setUp(self):
