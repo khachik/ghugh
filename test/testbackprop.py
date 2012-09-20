@@ -331,5 +331,57 @@ class TestInputAlgoBatchBias(TestInputAlgoBatchNoBias):
     def setUp(self):
         self.init(True)
 
+class BackPropAlgo(object):
+
+    def init(self, bias, batch):
+        self.i = InputLayer(2, 3, bias=bias)
+        self.h1 = HiddenLayer(3, 4, bias=bias)
+        self.h2 = HiddenLayer(4, 1, bias=bias)
+        self.o = OutputLayer(1)
+        self.net = Net(self.i, self.h1, self.h2, self.o)
+        self.dataset = [[[1, 1], [0]],
+                        [[1, 0], [1]],
+                        [[0, 1], [1]],
+                        [[0, 0], [0]]]
+        self.algo = BackPropagation(self.net, batch=batch)
+    
+
+class TestBackPropagation(BackPropAlgo):
+
+    def init(self, bias, batch):
+        super().init(bias, batch)
+
+    def test0(self):
+        self.algo.train(self.dataset, 0.1, 0.2)
+
+
+class TestBackPropagationOnlineNoBias(TestBackPropagation,
+                                      unittest.TestCase):
+
+    def setUp(self):
+        super().init(None, False)
+
+
+class TestBackPropagationOnlineBias(TestBackPropagation,
+                                    unittest.TestCase):
+
+    def setUp(self):
+        super().init(1, False)
+
+
+class TestBackPropagationBatchNoBias(TestBackPropagation,
+                                     unittest.TestCase):
+
+    def setUp(self):
+        super().init(None, True)
+
+
+class TestBackPropagationBatchBias(TestBackPropagation,
+                                   unittest.TestCase):
+
+    def setUp(self):
+        super().init(1, True)
+
+
 if __name__ == "__main__":
     unittest.main()

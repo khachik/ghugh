@@ -1,39 +1,38 @@
 from .trainer import Algo
 
 class BackPropagation(Algo):
-    def __init__(self, net, learningRate=0.01, momentum=0.0, batch=False):
+    def __init__(self, net, batch=False):
         super().__init__()
-        self.lr = learningRate
-        self.momentum = momentum
         self.batch = batch
         self.net = net
-        self.input = Input(self.net.layers()[0], net.layers()[1], batch)
-        self.hiddens = tuple(Hidden(net.layers()[i],
-                                    len(net.layers()[i+1]),
-                                    batch) for i in
-                                              range(1, len(net.layers())-1))
+        self.input = Input(self.net.layers()[0],
+                           self.net.layers()[1].inputSize(), batch)
+        self.hiddens = []
+        for i in range(1, len(net.layers())-1):
+            nextLen = net.layers()[i+1].inputSize()
+            self.hiddens.append(Hidden(net.layers()[i], nextLen, batch))
         self.output = Output(self.net.layers()[-1])
 
-    def train(self, dataset):
+    def train(self, dataset, LR, M):
         n = 0
         merror = 0.0
         for input, expected in dataset:
-            merror += self.propagate(input, expected)
+            merror += self.propagate(input, expected, LR, M)
             n += 1
         if self.batch:
-            for h in self.hidden:
-                h.updateWeights()
-            self.input.updateWeights()
+            for h in self.hiddens:
+                h.updateWeights(LR, M)
+            self.input.updateWeights(LR, M)
         return merror/n
 
-    def propagate(self, input, expected):
+    def propagate(self, input, expected, LR, M):
         self.net.feed(input)
         error = self.output.propagate(expected)
         deltas = self.output.deltas()
-        for h in self.hidden:
-            h.update(deltas, self.lr, self.momentum)
+        for h in self.hiddens:
+            h.update(deltas, LR, M)
             deltas = h.deltas()
-        self.input.update(deltas, self.lr, self.momentum)
+        self.input.update(deltas, LR, M)
         return error
         
         

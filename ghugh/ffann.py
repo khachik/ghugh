@@ -1,6 +1,17 @@
 import math, random, collections, numbers
 from . import util
 
+
+def network(*neurons, bias=None):
+    if len(neurons) < 2:
+        raise ValueError("At least two layers needed, got %s" % neurons)
+    input = InputLayer(neurons[0], neurons[1], bias=bias)
+    layers = [input]
+    for i in range(1, len(neurons)-1):
+        layers.append(HiddenLayer(neurons[i], neurons[i+1], bias=bias))
+    layers.append(OutputLayer(neurons[-1]))
+    return Net(*layers)
+
 def sigmoid(x):
     if x > 36: x = 36
     elif x < -36: x = -36
@@ -51,6 +62,11 @@ class _OLayer(_Layer):
                              for _ in range(ocount)]
         self._weightsAt = util.transposed(self._weights)
 
+    def inputSize(self):
+        if self._bias:
+            return len(self) - 1
+        return len(self)
+
     def bias(self):
         return self._bias
 
@@ -59,24 +75,6 @@ class _OLayer(_Layer):
     
     def weightsAt(self, index):
         return self._weightsAt[index]
-
-    def fix(self, odeltas, N=0.1):
-        if self._bias:
-            deltas = [0.0] * (len(self) - 1)
-            for oi, od in enumerate(odeltas):
-                weights = self._weights[oi]
-                for (i, (o, w)) in enumerate(zip(self, weights)):
-                    if i!= 0: deltas[i-1] += od * w
-                    weights[i] = w + N*od*o
-        else:
-            deltas = [0.0] * len(self)
-            for oi, od in enumerate(odeltas):
-                weights = self._weights[oi]
-                for (i, (o, w)) in enumerate(zip(self, weights)):
-                    deltas[i] += od * w
-                    weights[i] = w + N*od*o
-
-        return deltas
 
 
 class InputLayer(_OLayer):
@@ -147,6 +145,9 @@ class OutputLayer(_ILayer):
     def __init__(self, count, function=sigmoid, dfunction=dsigmoid):
         super().__init__(count, function, dfunction)
 
+    def inputSize(self):
+        return len(self)
+
     def __repr__(self):
         return "output[%d] x->%s" % (len(self), self._function.__name__)
         
@@ -158,6 +159,9 @@ class Net(object):
                              len(layers))
         self._layers = tuple(layers)
         self._feed = util.compose(*tuple(l.activate for l in self._layers))
+
+    def layers(self):
+        return self._layers
 
     def feed(self, data):
         return self._feed(data)
