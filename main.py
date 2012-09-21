@@ -5,6 +5,7 @@ from ghugh import trainer
 from ghugh import backprop
 from data import read
 
+
 def testXOR():
     input = ffann.InputLayer(2, 2, iweights=1, bias=True)
     hidden = ffann.HiddenLayer(2, 1, iweights=1, bias=True)
