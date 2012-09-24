@@ -32,8 +32,7 @@ class TestCursor(unittest.TestCase):
         self.assertEqual(2, len(c))
 
     def testOutOfBounds(self):
-        c = _Cursor(self.data, 4)
-        self.assertRaises(IndexError, c.__getitem__, 0)
+        self.assertRaises(IndexError, _Cursor, self.data, 4)
         c = _Cursor(self.data, 3)
         self.assertRaises(IndexError, c.__getitem__, 2)
 

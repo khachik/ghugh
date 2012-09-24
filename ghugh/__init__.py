@@ -1,1 +1,1 @@
-__all__ = ["nn", "trainer", "util"]
+__all__ = ["ffann", "backprop", "trainer", "util"]

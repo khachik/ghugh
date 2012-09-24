@@ -25,7 +25,7 @@ def testXOR():
     print()
 
     print("Traning...")
-    algo = backprop.BackPropagation(net, False)
+    algo = backprop.Backpropagation(net, False)
     converged, error = trainer.supervised(algo, data, 1.0, 0.0, 2000)
     print("Converged:", converged,)
     print("Error:", error)
@@ -53,7 +53,7 @@ def testDATA():
     print()
 
     print("Traning...")
-    algo = backprop.BackPropagation(net, False)
+    algo = backprop.Backpropagation(net, False)
     converged, error = trainer.supervised(algo, data, 0.1, 0.0, 500)
     print("Converged:", converged,)
     print("Error:", error)

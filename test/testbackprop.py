@@ -331,7 +331,7 @@ class TestInputAlgoBatchBias(TestInputAlgoBatchNoBias):
     def setUp(self):
         self.init(True)
 
-class BackPropAlgo(object):
+class BackpropAlgo(object):
 
     def init(self, bias, batch):
         self.i = InputLayer(2, 3, bias=bias)
@@ -343,10 +343,10 @@ class BackPropAlgo(object):
                         [[1, 0], [1]],
                         [[0, 1], [1]],
                         [[0, 0], [0]]]
-        self.algo = BackPropagation(self.net, batch=batch)
+        self.algo = Backpropagation(self.net, batch=batch)
     
 
-class TestBackPropagation(BackPropAlgo):
+class TestBackpropagation(BackpropAlgo):
 
     def init(self, bias, batch):
         super().init(bias, batch)
@@ -355,28 +355,28 @@ class TestBackPropagation(BackPropAlgo):
         self.algo.train(self.dataset, 0.1, 0.2)
 
 
-class TestBackPropagationOnlineNoBias(TestBackPropagation,
+class TestBackpropagationOnlineNoBias(TestBackpropagation,
                                       unittest.TestCase):
 
     def setUp(self):
         super().init(None, False)
 
 
-class TestBackPropagationOnlineBias(TestBackPropagation,
+class TestBackpropagationOnlineBias(TestBackpropagation,
                                     unittest.TestCase):
 
     def setUp(self):
         super().init(1, False)
 
 
-class TestBackPropagationBatchNoBias(TestBackPropagation,
+class TestBackpropagationBatchNoBias(TestBackpropagation,
                                      unittest.TestCase):
 
     def setUp(self):
         super().init(None, True)
 
 
-class TestBackPropagationBatchBias(TestBackPropagation,
+class TestBackpropagationBatchBias(TestBackpropagation,
                                    unittest.TestCase):
 
     def setUp(self):
