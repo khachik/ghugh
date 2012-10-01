@@ -2,7 +2,7 @@ import itertools, functools, collections
 
 def compose(*functions, unpack=False):
     """Function composition as:
-    composed(x) -> functions[n](...(functions[1](functions[0])))
+    composed(x) -> functions[n](...(functions[1](functions[0](x))))
     if unpack is True, then the returned value from each call is unpacked
     befored passing to the next function."""
 
